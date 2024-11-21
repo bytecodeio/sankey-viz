@@ -7,6 +7,7 @@ import am4themes_animated from "@amcharts/amcharts4/themes/animated";
 import * as am5flow from "@amcharts/amcharts5/flow";
 import * as $ from "jquery";
 import "bootstrap/dist/css/bootstrap.min.css";
+import "./style.css";
 
 
 looker.plugins.visualizations.add({
@@ -40,9 +41,6 @@ looker.plugins.visualizations.add({
             const fieldOptions2 = [...dimensions1, ...measures1].map((dim) => ({
               [dim.label]: dim.label
             }));
-
-
-
 
 
             const configOptions  = {
@@ -143,48 +141,104 @@ looker.plugins.visualizations.add({
                   order: 10,
                 },
 
+                nodeWidth: {
+                  type: "string",
+                  label: "Change Node Width (1 and up)",
+                  default: "5",
+                  display: "text",
+                  placeholder: "5",
+                  section: "Style",
+                  order: 11,
+                },
+
+                nodeRadius: {
+                  type: "boolean",
+                  label: "Turn on Node Border Radius",
+                  default: false,
+                  order: 12,
+                  section: "Style",
+                },
 
 
-                //
-                // firstCol: {
-                //   label: "Choose Dimension 1",
-                //   type: "string",
-                //   display: "select",
-                //   default: "",
-                //   values: [{ none: "None" }, ...fieldOptions],
-                //
-                //   order: 0,
-                //   section: "Values",
-                // },
-                //
-                // secondCol: {
-                //   label: "Choose Dimension 2",
-                //   type: "string",
-                //   display: "select",
-                //   default: "",
-                //   values: [{ none: "None" }, ...fieldOptions],
-                //
-                //   order: 1,
-                //   section: "Values",
-                // },
-                //
-                //
-                // measureCol: {
-                //   label: "Choose Measure",
-                //   type: "string",
-                //   display: "select",
-                //   default: "",
-                //   values: [{ none: "None" }, ...fieldOptions],
-                //
-                //   order: 2,
-                //   section: "Values",
-                // },
+                nodeStroke: {
+                  type: "boolean",
+                  label: "Add Node Stroke",
+                  default: false,
+                  order: 13,
+                  section: "Style",
+                },
+
+                nodeStrokeColor: {
+                  type: "string",
+                  label: "Change Node Stroke Color",
+                  default: "#000000",
+                  display: "text",
+                  placeholder: "#000000",
+
+                  order: 14,
+                  section: "Style",
+
+                },
+
+                nodeStrokeWidth:{
+                  type: "string",
+                  label: "Change Node Stroke Width (1 and up)",
+                  default: "1",
+                  display: "text",
+                  placeholder: "1",
+                  section: "Style",
+                  order: 15,
+
+                },
+
+                tooltipColor: {
+                  type: "string",
+                  label: "Change Tooltip Background Color",
+                  default: "#000000",
+                  display: "text",
+                  placeholder: "#000000",
+
+                  order: 16,
+                  section: "Style",
+
+                },
+
+                orientation: {
+                  type: "boolean",
+                  label: "Change to Vertical Orientation",
+                  default: false,
+                  order: 17,
+                  section: "Style",
+                },
+
+                chartColor: {
+                  type: "string",
+                  label: "Change Chart Color",
+                  default: '#000000',
+                  display: "text",
+                  placeholder: '#000000',
+                  order: 18,
+                  section: "Style",
+                },
 
 
             }
 
   const lookerVis = this;
  lookerVis.trigger("registerOptions", configOptions);
+
+ const hasOneDimension = queryResponse.fields.dimensions.length === 2;
+ const hasOneMeasure = queryResponse.fields.measures.length === 1;
+ const isMeasureNumeric = queryResponse.fields.measures[0]?.is_numeric;
+
+ if (!hasOneDimension || !hasOneMeasure) {
+   this.addError({
+     title: "Incompatible Data",
+     message: "This chart requires two dimensions and one measure.",
+   });
+   return;
+ }
+
   const dimensionName = queryResponse.fields.dimensions[0].name;
   const dimensionValues = data.map((row) => `${row[dimensionName].value}`);
 
@@ -200,6 +254,21 @@ looker.plugins.visualizations.add({
   let measureCol = config.measureCol
 
 
+  // get dimensions and measures
+const { dimension_like, measure_like, pivots } = queryResponse.fields;
+const fields = {
+  dimensions: dimension_like.map((d) => d.name),
+  dimensionsLabel: dimension_like.map((d) => d.label_short),
+  measures: measure_like.map((m) => m.name),
+  measuresLabel: measure_like.map((m) => m.label_short),
+  pivots: pivots?.map((p) => p.name),
+};
+
+const dimensionLabel = fields.dimensionsLabel[0];
+const measureLabel = fields.measuresLabel[0];
+
+// console.log(measureLabel)
+
 
     element.innerHTML = "";
     element.innerHTML = `
@@ -211,9 +280,6 @@ looker.plugins.visualizations.add({
 
 
       @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:ital,wght@0,300;0,400;0,500;0,600;1,100;1,700&display=swap');
-
-
-
          body{
           font-family: ${config.bodyStyle ? config.bodyStyle : "'Roboto'"};
           font-weight:${config.weight || "300"};
@@ -236,7 +302,7 @@ looker.plugins.visualizations.add({
           margin-top: 0px;
           border: none;
           display: flex;
-          justify-content: center;
+
           position:relative;
           flex-direction: column;
          }
@@ -265,7 +331,6 @@ looker.plugins.visualizations.add({
          .abso {
             position: absolute;
             top:0;
-
             display:${config.side ? "block" : "none"}
 
         }
@@ -290,13 +355,18 @@ looker.plugins.visualizations.add({
         }
 
         p{
-          margin:0 0 .25rem 0
+
           font-family: ${config.bodyStyle ? config.bodyStyle : "'Roboto'"};
           font-weight: ${config.weight ? config.weight : "500"};
           font-size: ${config.textSize ? config.textSize : "24px"};
           color: ${config.titleColor ? config.titleColor : "#000000"};
-          display:${config.side ? "none" : "flex"}
+          display:${config.side ? "none" : "flex"};
+          margin:.5rem 0em;
+        }
 
+
+        [data-id="{id}"] {
+          visibility: hidden;
         }
 
 
@@ -307,6 +377,9 @@ looker.plugins.visualizations.add({
 
 
 var visContainer = document.createElement('div');
+
+
+
 
 const titleClass = config.align ? `d-flex ${config.align}` : 'd-flex justify-content-start';
 
@@ -325,26 +398,59 @@ root.setThemes([
 
 
 
+
+//build chart
 var series = root.container.children.push(am5flow.Sankey.new(root, {
   sourceIdField: "from",
   targetIdField: "to",
   valueField: "value",
-  paddingRight: 100,
+
+  paddingRight: config.orientation ? 10 : 100,
   paddingLeft: 10,
-  nodeWidth: 5
+  nodeWidth: config.nodeWidth ? config.nodeWidth : 5,
+  orientation: config.orientation ? "vertical" : "horizontal",
 
 }));
 
 
-series.nodes.labels.template.setAll({
-  fontSize: 15,
-  maxWidth: 150,
-  oversizedBehavior: "wrap",
-  fontWeight: config.weight ? config.weight : "500",
-  fontFamily: config.bodyStyle ? config.bodyStyle : '"Roboto", sans-serif',
-  nodeWidth: 5,
+
+series.nodes.rectangles.template.set("templateField", "nodeSettings");
+series.links.template.set("templateField", "linkSettings");
+
+const colorRange = config.color1
+
+const hexCodes = config.color1;
+
+const numbers = hexCodes.map(hexCode => {
+  const hexValue = hexCode.substring(1);
+  return parseInt(hexValue, 16);
 });
 
+
+
+
+series.nodes.get("colors").set("colors", [
+
+  series.set("fill", am5.color(numbers[0] || 0x0d6efd)),
+  series.set("fill", am5.color(numbers[1] || numbers[0])),
+  series.set("fill", am5.color(numbers[2] || numbers[0])),
+  series.set("fill", am5.color(numbers[3] || numbers[0])),
+  series.set("fill", am5.color(numbers[4] || numbers[0])),
+  series.set("fill", am5.color(numbers[5] || numbers[0])),
+  series.set("fill", am5.color(numbers[6] || numbers[0])),
+  series.set("fill", am5.color(numbers[7] || numbers[0])),
+  series.set("fill", am5.color(numbers[8] || numbers[0])),
+  series.set("fill", am5.color(numbers[9] || numbers[0])),
+
+]);
+
+// const seriesData1 = dimensionValues.map((fromValue, index) => ({
+//
+//   id: fromValue,
+//   name:dimensionValues1[index],
+//   fill: am5.color(parseInt(colorRange[index % colorRange.length].substring(1), 16))
+// }));
+// series.nodes.data.setAll(seriesData1);
 
 
 
@@ -353,30 +459,55 @@ const seriesData = dimensionValues.map((fromValue, index) => ({
   to: dimensionValues1[index],
   value: measureValues[index],
 
-
 }));
 
+series.data.setAll(seriesData)
 
 
+// series.nodes.labels.template.setAll({
+//   x: am5.percent(50),
+//   centerX: am5.percent(50),
+//   textAlign: "right",
+//   text: "{name}",
+//
+//
+// });
 
-series.links.template.setAll({
-  fillStyle: "gradient"
+
+series.nodes.labels.template.setAll({
+  fontSize: 15,
+  fill: config.chartColor ? config.chartColor : "#000000",
+  maxWidth: 150,
+  oversizedBehavior: "truncate",
+
+  ellipsis: "...",
+  fontWeight: config.weight ? config.weight : "500",
+  fontFamily: config.bodyStyle ? config.bodyStyle : '"Roboto", sans-serif',
+
 });
 
 
+//tooltip color
+series.links.template.setAll({
+  fill: config.tooltipColor ?  am5.color(config.tooltipColor) : am5.color(0x00000)
+});
 
+
+//nodes styles
 series.nodes.rectangles.template.setAll({
   fillOpacity: config.opacity ? config.opacity : .8,
-  // stroke: am5.color(0x000000),
-  // strokeWidth: 1,
-  // cornerRadiusTL: 4,
-  // cornerRadiusTR: 4,
-  // cornerRadiusBL: 4,
-  // cornerRadiusBR: 4
+  stroke: config.nodeStroke ? am5.color(config.nodeStrokeColor || "#000000") : 0,
+  strokeWidth: config.nodeStroke ? config.nodeStrokeWidth : 1,
+  cornerRadiusTL: config.nodeRadius ? 4 : 0,
+  cornerRadiusTR: config.nodeRadius ? 4 : 0,
+  cornerRadiusBL: config.nodeRadius ? 4 : 0,
+  cornerRadiusBR: config.nodeRadius ? 4 : 0,
+
 });
 
 
-series.data.setAll(seriesData);
+
+// series.data.setAll(seriesData);
 series.appear(1000, 100);
 
 
