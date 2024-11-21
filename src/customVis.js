@@ -265,9 +265,10 @@ const fields = {
 };
 
 const dimensionLabel = fields.dimensionsLabel[0];
+const dimensionLabel2 = fields.dimensionsLabel[1];
 const measureLabel = fields.measuresLabel[0];
 
-// console.log(measureLabel)
+console.log(dimensionLabel, dimensionLabel2)
 
 
     element.innerHTML = "";
@@ -288,7 +289,7 @@ const measureLabel = fields.measuresLabel[0];
         #chartdiv {
           padding-top:0em;
           width: 100%;
-         height: 500px;
+         height: 590px;
 
 
         overflow: visible;
@@ -463,7 +464,11 @@ const seriesData = dimensionValues.map((fromValue, index) => ({
 
 series.data.setAll(seriesData)
 
+series.links.template.setAll({
 
+tooltipText:  `${dimensionLabel}: {sourceId}\n${dimensionLabel2}: {targetId}\n${measureLabel}: {value}`
+
+});
 // series.nodes.labels.template.setAll({
 //   x: am5.percent(50),
 //   centerX: am5.percent(50),
